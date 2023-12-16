@@ -19,7 +19,8 @@ fn conf() -> Conf {
 async fn main() {
     let mut texture_map = load_resources().await;
     let mut game_map = GameMap::new(200, 200);
-    game_map.generate_simple_map();
+    //game_map.generate_simple_map();
+    game_map.generate_noise_map();
 
     let mut camera = Camera2D {
         zoom: vec2(1. / screen_width() * 2., 1. / screen_height() * 2.),
@@ -32,8 +33,8 @@ async fn main() {
 
         set_camera(&camera);
 
-        for i in 0..game_map.tiles.len() {
-            let tile_index = game_map.tiles[i];
+        for i in 0..game_map.noise_map.len() {
+            let tile_index = game_map.noise_map[i];
             let draw_params = DrawTextureParams{
                 source: Option::from(Rect::new((tile_index * 24) as f32, 0., 24., 24.)),
                 ..Default::default()

@@ -1,3 +1,4 @@
+use noise::{NoiseFn, Perlin};
 use rand::Rng;
 
 pub enum GrassTileType {
@@ -26,6 +27,7 @@ impl GrassTileType {
 
 pub struct GameMap {
     pub tiles: Vec<i32>,
+    pub noise_map: Vec<i32>,
     pub map_width: i32,
     pub map_height: i32
 }
@@ -34,6 +36,7 @@ impl GameMap {
     pub fn new(map_width: i32, map_height: i32) -> Self {
         Self {
             tiles: Vec::new(),
+            noise_map: Vec::new(),
             map_width,
             map_height
         }
@@ -51,6 +54,27 @@ impl GameMap {
         self.tiles = tiles;
     }
 
+    pub fn generate_noise_map(&mut self) {
+        let mut map = Vec::with_capacity(self.map_width as usize * self.map_height as usize);
+
+        let perlin = Perlin::new(1001010101);
+
+        for y in 0..self.map_height {
+            for x in 0..self.map_width {
+                let scale = 10.;
+                // Scale the coordinates to get different noise patterns
+                let nx = x as f64 / scale;
+                let ny = y as f64 / scale;
+
+                // Generate the noise value at this point and push it to the map
+                let value = perlin.get([nx, ny]);
+                map.push(((value + 1.0) * (6.0 / 2.0)).floor() as i32);
+            }
+        }
+
+        self.noise_map = map.clone();
+    }
+
     pub fn map_index(&self, x: i32, y: i32) -> i32 {
         ((y * self.map_width) + x)
     }
@@ -66,7 +90,7 @@ mod tests {
 
     #[test]
     fn test_new_map() {
-        let mut game_map = GameMap::new(3, 3);
+        let game_map = GameMap::new(3, 3);
 
         assert_eq!(game_map.map_width, 3);
         assert_eq!(game_map.map_height, 3);
@@ -80,7 +104,18 @@ mod tests {
 
         assert_eq!(game_map.tiles.len(), 9);
         for tile in game_map.tiles {
-            assert!(tile >= 1 && tile <= 7);
+            assert!(tile >= 0 && tile < 7);
+        }
+    }
+
+    #[test]
+    fn test_generate_noise_map() {
+        let mut game_map = GameMap::new(3, 3);
+        game_map.generate_noise_map();
+
+        assert_eq!(game_map.noise_map.len(), 9);
+        for noise_value in game_map.noise_map {
+            assert!(noise_value >= 0 && noise_value <= 3);
         }
     }
 
