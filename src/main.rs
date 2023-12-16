@@ -78,7 +78,8 @@ async fn load_resources() -> HashMap<String, Texture2D> {
         texture_assets.insert(path.to_string(), load_texture(path).await.unwrap());
     }
 
-    // TODO: This seems to not work, find out why
+    // TODO: This seems to not work, find out why --seems to be a known issue with macroquad
+    // https://github.com/not-fl3/macroquad/issues/659
     // build_textures_atlas();
 
     texture_assets
