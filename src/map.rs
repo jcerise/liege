@@ -68,7 +68,7 @@ impl GameMap {
 
                 // Generate the noise value at this point and push it to the map
                 let value = perlin.get([nx, ny]);
-                map.push(((value + 1.0) * (6.0 / 2.0)).floor() as i32);
+                map.push(((value + 1.0) * (5.0 / 2.0)).floor() as i32);
             }
         }
 
