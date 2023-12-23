@@ -3,6 +3,7 @@ mod map;
 use std::default::Default;
 use std::collections::HashMap;
 use macroquad::color::{BLACK};
+use macroquad::experimental::animation::{AnimatedSprite, Animation};
 use macroquad::prelude::*;
 use crate::map::GameMap;
 
@@ -32,7 +33,19 @@ async fn main() {
         ..Default::default()
     };
 
-
+    let mut animated_sprite = AnimatedSprite::new(
+        9,
+        9,
+        &[
+            Animation {
+                name: "idle".to_string(),
+                row: 0,
+                frames: 16,
+                fps: 8,
+            }
+        ],
+        true
+    );
 
     loop {
         clear_background(BLACK);
@@ -58,6 +71,21 @@ async fn main() {
             }
         }
 
+        // Draw a rogue character
+        let draw_params = DrawTextureParams{
+            source: Some(animated_sprite.frame().source_rect),
+            dest_size: Option::from((SPRITE_SCALE * vec2(SPRITE_SIZE, SPRITE_SIZE))),
+            ..Default::default()
+        };
+
+        draw_texture_ex(
+            texture_map.get("resources/characters/rogue/idle/right.png").unwrap(),
+            100.,
+            100.,
+            WHITE,
+            draw_params
+        );
+
         if is_key_down(KeyCode::Up) {
             camera.target.y -= 4.0;
         }
@@ -75,6 +103,7 @@ async fn main() {
 
         draw_text(&format!("FPS: {}", get_fps()), 10., 20., 20.0, WHITE);
 
+        animated_sprite.update();
         next_frame().await;
     }
 }
