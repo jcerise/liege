@@ -7,7 +7,9 @@ use macroquad::prelude::*;
 use crate::map::GameMap;
 
 const TILE_SIZE: f32 = 8.;
-const TILE_SCALE: Vec2 = Vec2::new(2., 2.);
+const SPRITE_SIZE: f32 = 9.;
+const TILE_SCALE: Vec2 = Vec2::new(2.5, 2.5);
+const SPRITE_SCALE: Vec2 = Vec2::new(2.5, 2.5);
 
 fn conf() -> Conf {
     Conf {
@@ -30,6 +32,8 @@ async fn main() {
         ..Default::default()
     };
 
+
+
     loop {
         clear_background(BLACK);
 
@@ -39,7 +43,7 @@ async fn main() {
             let tile_index = game_map.noise_map[i];
             let draw_params = DrawTextureParams{
                 source: Option::from(Rect::new((tile_index as f32) * TILE_SIZE, 0., TILE_SIZE, TILE_SIZE)),
-                dest_size: Option::from((TILE_SCALE * vec2(8., 8.))),
+                dest_size: Option::from((TILE_SCALE * vec2(TILE_SIZE, TILE_SIZE))),
                 ..Default::default()
             };
             let (x, y) = game_map.map_coords(i as i32);
@@ -79,11 +83,14 @@ async fn load_resources() -> HashMap<String, Texture2D> {
     let mut texture_assets: HashMap<String, Texture2D> = HashMap::new();
     let texture_paths = vec![
         "resources/map/grass_tiles.png",
-        "resources/map/plains.png"
+        "resources/map/plains.png",
+        "resources/characters/rogue/idle/right.png",
     ];
 
     for path in texture_paths {
-        texture_assets.insert(path.to_string(), load_texture(path).await.unwrap());
+        let texture = load_texture(path).await.unwrap();
+        texture.set_filter(FilterMode::Nearest);
+        texture_assets.insert(path.to_string(), texture);
     }
 
     // TODO: This seems to not work, find out why --seems to be a known issue with macroquad
