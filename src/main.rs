@@ -10,18 +10,28 @@ use macroquad::color::{BLACK};
 use macroquad::experimental::animation::{AnimatedSprite, Animation};
 use macroquad::prelude::*;
 use crate::animations::load_animations;
-use crate::components::{AnimatedComponent, AnimationState, AnimationStateComponent, DrawableComponent, MovementComponent};
+use crate::components::{AnimatedComponent, AnimationState, DrawableComponent, MovementComponent};
 use crate::map::GameMap;
+use crate::systems::apply_random_movement_system;
 
 const TILE_SIZE: f32 = 8.;
 const SPRITE_SIZE: f32 = 9.;
 const TILE_SCALE: Vec2 = Vec2::new(2.5, 2.5);
 const SPRITE_SCALE: Vec2 = Vec2::new(2.5, 2.5);
+const MAP_WIDTH: i32 = 200;
+const MAP_HEIGHT: i32 = 200;
 
 struct RenderData<'a> {
     position: Vec2,
     texture_handle: &'a str,
     animation_index: &'a str,
+}
+
+pub struct MapInformation {
+    width: i32,
+    height: i32,
+    tile_size: f32,
+    tile_scale: Vec2,
 }
 
 fn conf() -> Conf {
@@ -36,7 +46,7 @@ fn conf() -> Conf {
 #[macroquad::main(conf)]
 async fn main() {
     let mut texture_map = load_resources().await;
-    let mut game_map = GameMap::new(200, 200);
+    let mut game_map = GameMap::new(MAP_WIDTH, MAP_HEIGHT);
     game_map.generate_noise_map();
 
     let mut animation_map = load_animations();
@@ -50,6 +60,8 @@ async fn main() {
     let mut world = World::default();
     let mut resources = Resources::default();
 
+    resources.insert(MapInformation{width: MAP_WIDTH, height: MAP_HEIGHT, tile_size: TILE_SIZE, tile_scale: TILE_SCALE});
+
     // Create a single rogue entity
     world.push(
         (
@@ -58,59 +70,15 @@ async fn main() {
                 texture_handle: "resources/characters/rogue/rogue.png"
             },
             AnimatedComponent {
-                animated_sprite_index: "rogue_walk_right"
-            },
-            AnimationStateComponent { state: AnimationState::Idle },
-            MovementComponent{ velocity: Vec2::new(0., 0.) }
-        )
-    );
-
-    // Create a second rogue entity
-    world.push(
-        (
-            DrawableComponent {
-                position: Vec2::new(150., 150.),
-                texture_handle: "resources/characters/rogue/rogue.png"
-            },
-            AnimatedComponent {
                 animated_sprite_index: "rogue_idle"
             },
-            AnimationStateComponent { state: AnimationState::Idle },
-            MovementComponent{ velocity: Vec2::new(0., 0.) }
+            MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
         )
     );
 
-    // Create a third rogue entity
-    world.push(
-        (
-            DrawableComponent {
-                position: Vec2::new(200., 200.),
-                texture_handle: "resources/characters/rogue/rogue.png"
-            },
-            AnimatedComponent {
-                animated_sprite_index: "rogue_walk_left"
-            },
-            AnimationStateComponent { state: AnimationState::Idle },
-            MovementComponent{ velocity: Vec2::new(0., 0.) }
-        )
-    );
-
-    // Create a fourth rogue entity
-    world.push(
-        (
-            DrawableComponent {
-                position: Vec2::new(250., 250.),
-                texture_handle: "resources/characters/rogue/rogue.png"
-            },
-            AnimatedComponent {
-                animated_sprite_index: "rogue_walk_up_right"
-            },
-            AnimationStateComponent { state: AnimationState::Idle },
-            MovementComponent{ velocity: Vec2::new(0., 0.) }
-        )
-    );
-
-    let mut schedule = Schedule::builder().build();
+    let mut schedule = Schedule::builder()
+        .add_system(apply_random_movement_system())
+        .build();
 
     loop {
         clear_background(BLACK);
