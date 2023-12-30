@@ -33,7 +33,7 @@ pub fn load_animations() -> HashMap<String, AnimatedSprite> {
                 name: "rogue_walk_right".to_string(),
                 row: 1,
                 frames: 4,
-                fps: 4
+                fps: 6
             }
         ],
         true
@@ -47,7 +47,7 @@ pub fn load_animations() -> HashMap<String, AnimatedSprite> {
                 name: "rogue_walk_left".to_string(),
                 row: 2,
                 frames: 4,
-                fps: 4
+                fps: 6
             }
         ],
         true
@@ -60,7 +60,7 @@ pub fn load_animations() -> HashMap<String, AnimatedSprite> {
                 name: "rogue_walk_up_right".to_string(),
                 row: 3,
                 frames: 4,
-                fps: 4
+                fps: 6
             }
         ],
         true
@@ -71,9 +71,9 @@ pub fn load_animations() -> HashMap<String, AnimatedSprite> {
         &[
             Animation {
                 name: "rogue_walk_up_left".to_string(),
-                row: 4,
+                row: 3,
                 frames: 4,
-                fps: 4
+                fps: 6
             }
         ],
         true

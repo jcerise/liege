@@ -18,11 +18,15 @@ pub struct DrawableComponent<'a> {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MovementComponent {
-    pub destination: Vec2,
-    pub speed: f32,
+    pub velocity: Vec2,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct AnimatedComponent<'a> {
     pub animated_sprite_index: &'a str
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct AnimationStateComponent {
+    pub state: AnimationState
 }
