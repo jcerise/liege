@@ -2,15 +2,19 @@ use legion::system;
 use legion::world::SubWorld;
 use macroquad::math::Vec2;
 use rand::Rng;
+use uuid::Uuid;
 use crate::components::{AnimatedComponent, DrawableComponent, MovementComponent};
-use crate::{MapInformation, TILE_SCALE, TILE_SIZE};
+use crate::{AnimationPool, MapInformation, TILE_SCALE, TILE_SIZE};
+use crate::animations::AnimationMap;
 
 #[system(for_each)]
 pub fn apply_random_movement(
     movement: &mut MovementComponent,
     drawable: &mut DrawableComponent,
     animation: &mut AnimatedComponent,
-    #[resource] map_info: &MapInformation) {
+    #[resource] map_info: &MapInformation,
+    #[resource] mut animation_pool: &mut AnimationPool,
+    #[resource] animation_mapping: &AnimationMap) {
     let mut rng = rand::thread_rng();
 
     // Check if this entity has a direction. If not, randomly decide if one should be set, or if it will remain idle
@@ -27,8 +31,10 @@ pub fn apply_random_movement(
             movement.destination = new_dest;
         } else {
             // Remain idle, update the animation to idle
-            if animation.animated_sprite_index != "rogue_idle" {
-                animation.animated_sprite_index = "rogue_idle";
+            if animation.animated_sprite_label != "rogue_idle" {
+                animation.animated_sprite_label = "rogue_idle";
+                let new_animation = animation_mapping.animations.get("rogue_idle").unwrap().clone();
+                animation.animated_sprite_index = animation_pool.update_animation(animation.animated_sprite_index, new_animation);
             }
         }
     } else {
@@ -40,7 +46,9 @@ pub fn apply_random_movement(
         if direction.length() < 1.0 {
             // Arrived at destination, clear out current destination, and set the idle animation
             movement.destination = Vec2::ZERO;
-            animation.animated_sprite_index = "rogue_idle";
+            animation.animated_sprite_label = "rogue_idle";
+            let new_animation = animation_mapping.animations.get("rogue_idle").unwrap().clone();
+            animation.animated_sprite_index = animation_pool.update_animation(animation.animated_sprite_index, new_animation);
         } else {
             let normalized_direction = direction.normalize();
             // Move towards the destination, setting an appropriate animation based on the direction of movement
@@ -62,8 +70,11 @@ pub fn apply_random_movement(
                 new_animation = "rogue_walk_up_right";
             }
 
-            animation.animated_sprite_index = new_animation;
+            if animation.animated_sprite_label != new_animation {
+                animation.animated_sprite_label = new_animation;
+                let new_animation_sprite = animation_mapping.animations.get(new_animation).unwrap().clone();
+                animation.animated_sprite_index = animation_pool.update_animation(animation.animated_sprite_index, new_animation_sprite);
+            }
         }
-
     }
 }

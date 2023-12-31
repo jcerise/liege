@@ -1,11 +1,22 @@
 use std::collections::HashMap;
 use macroquad::experimental::animation::{AnimatedSprite, Animation};
+use uuid::Uuid;
 
-struct SimpleAnimation {
-    width: f32,
-    height: f32,
-    animation: Animation,
-    playing: bool
+pub struct AnimationMap {
+    pub animations: HashMap<String, AnimatedSprite>
+}
+
+pub struct AnimationPool {
+    pub pool: HashMap<Uuid, AnimatedSprite>
+}
+
+impl AnimationPool {
+    pub fn update_animation(&mut self, old_animation_id: Uuid, new_animation: AnimatedSprite) -> Uuid {
+        self.pool.remove(&old_animation_id);
+        let new_id = Uuid::new_v4();
+        self.pool.insert(new_id, new_animation);
+        new_id
+    }
 }
 
 pub fn load_animations() -> HashMap<String, AnimatedSprite> {

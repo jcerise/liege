@@ -9,7 +9,8 @@ use legion::{IntoQuery, Read, Resources, Schedule, World, Write};
 use macroquad::color::{BLACK};
 use macroquad::experimental::animation::{AnimatedSprite, Animation};
 use macroquad::prelude::*;
-use crate::animations::load_animations;
+use uuid::Uuid;
+use crate::animations::{AnimationMap, AnimationPool, load_animations};
 use crate::components::{AnimatedComponent, AnimationState, DrawableComponent, MovementComponent};
 use crate::map::GameMap;
 use crate::systems::apply_random_movement_system;
@@ -24,7 +25,7 @@ const MAP_HEIGHT: i32 = 200;
 struct RenderData<'a> {
     position: Vec2,
     texture_handle: &'a str,
-    animation_index: &'a str,
+    animation_index: Uuid,
 }
 
 pub struct MapInformation {
@@ -61,20 +62,33 @@ async fn main() {
     let mut resources = Resources::default();
 
     resources.insert(MapInformation{width: MAP_WIDTH, height: MAP_HEIGHT, tile_size: TILE_SIZE, tile_scale: TILE_SCALE});
+    resources.insert(AnimationPool{pool: HashMap::new()});
+    resources.insert(AnimationMap{animations: animation_map});
 
-    // Create a single rogue entity
-    world.push(
-        (
-            DrawableComponent {
-                position: Vec2::new(100., 100.),
-                texture_handle: "resources/characters/rogue/rogue.png"
-            },
-            AnimatedComponent {
-                animated_sprite_index: "rogue_idle"
-            },
-            MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
-        )
-    );
+    for _ in 0..1000 {
+        // Create a single rogue entity
+        let id = Uuid::new_v4();
+        if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
+            let animation = animation_mapping.animations.get("rogue_idle").unwrap().clone();
+            world.push(
+                (
+                    DrawableComponent {
+                        position: Vec2::new(100., 100.),
+                        texture_handle: "resources/characters/rogue/rogue.png"
+                    },
+                    AnimatedComponent {
+                        animated_sprite_label: "rogue_idle",
+                        animated_sprite_index: id
+                    },
+                    MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
+                )
+            );
+            // Push the animation into the animation pool
+            if let Some(mut animation_pool) = resources.get_mut::<AnimationPool>() {
+                animation_pool.pool.insert(id, animation);
+            }
+        }
+    }
 
     let mut schedule = Schedule::builder()
         .add_system(apply_random_movement_system())
@@ -118,14 +132,16 @@ async fn main() {
         }
 
         for data in render_data {
-            let current_anim = animation_map.get(data.animation_index).unwrap();
-            let draw_params = DrawTextureParams{
-                source: Some(current_anim.frame().source_rect),
-                dest_size: Option::from((SPRITE_SCALE * vec2(SPRITE_SIZE, SPRITE_SIZE))),
-                ..Default::default()
-            };
+            if let Some(mut animation_pool) = resources.get_mut::<AnimationPool>() {
+                let current_anim = animation_pool.pool.get(&data.animation_index).unwrap();
+                let draw_params = DrawTextureParams{
+                    source: Some(current_anim.frame().source_rect),
+                    dest_size: Option::from((SPRITE_SCALE * vec2(SPRITE_SIZE, SPRITE_SIZE))),
+                    ..Default::default()
+                };
 
-            draw_texture_ex(texture_map.get(data.texture_handle).unwrap(), data.position.x, data.position.y, WHITE, draw_params);
+                draw_texture_ex(texture_map.get(data.texture_handle).unwrap(), data.position.x, data.position.y, WHITE, draw_params);
+            }
         }
 
         if is_key_down(KeyCode::Up) {
@@ -145,13 +161,18 @@ async fn main() {
 
         // Debug information, printed in screen space
         let entity_count = world.len();
-        draw_text(&format!("FPS: {}", get_fps()), 10., 20., 20.0, WHITE);
-        draw_text(&format!("Entity Count: {}", entity_count), 10., 30., 20.0, WHITE);
+        draw_text(&format!("FPS: {}", get_fps()), 10., 20., 20., WHITE);
+        draw_text(&format!("Entity Count: {}", entity_count), 10., 30., 20., WHITE);
+        if let Some(mut animation_pool) = resources.get_mut::<AnimationPool>() {
+            let animations_count = animation_pool.pool.len();
+            draw_text(&format!("Animations Count: {}", animations_count), 10., 40., 20., WHITE);
+        }
 
         // Update all animations across all entities
-        let mut anim_query = <(Read<AnimatedComponent>)>::query();
-        for animated in anim_query.iter(&world) {
-            animation_map.get_mut(&animated.animated_sprite_index.to_string()).unwrap().update();
+        if let Some(mut animation_pool) = resources.get_mut::<AnimationPool>() {
+            for (_, animation) in animation_pool.pool.iter_mut() {
+                animation.update();
+            }
         }
 
         next_frame().await;

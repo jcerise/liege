@@ -1,5 +1,6 @@
 use macroquad::experimental::animation::AnimatedSprite;
 use macroquad::prelude::*;
+use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AnimationState {
@@ -24,5 +25,6 @@ pub struct MovementComponent {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct AnimatedComponent<'a> {
-    pub animated_sprite_index: &'a str
+    pub animated_sprite_label: &'a str,
+    pub animated_sprite_index: Uuid
 }

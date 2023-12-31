@@ -301,6 +301,7 @@ dependencies = [
  "macroquad",
  "noise",
  "rand 0.8.5",
+ "uuid",
 ]
 
 [[package]]
