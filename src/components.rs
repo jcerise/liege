@@ -1,6 +1,6 @@
-use macroquad::experimental::animation::AnimatedSprite;
+use benimator::{State};
 use macroquad::prelude::*;
-use uuid::Uuid;
+use crate::LiegeAnimation;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AnimationState {
@@ -23,8 +23,9 @@ pub struct MovementComponent {
     pub speed: f32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone)]
 pub struct AnimatedComponent<'a> {
     pub animated_sprite_label: &'a str,
-    pub animated_sprite_index: Uuid
+    pub liege_animation: LiegeAnimation,
+    pub animation_state: State,
 }
