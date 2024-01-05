@@ -1,5 +1,6 @@
 use benimator::State;
-use legion::system;
+use legion::{Entity, system};
+use legion::systems::CommandBuffer;
 use macroquad::math::Vec2;
 use rand::Rng;
 use crate::components::{AnimatedComponent, CreatureType, DrawableComponent, MovementComponent};
@@ -9,6 +10,33 @@ use crate::animations::goblin::GoblinAnimationStates;
 use crate::animations::rogue::RogueAnimationStates;
 
 #[system(for_each)]
+pub fn apply_random_rogue_death(
+    entity: &Entity,
+    animation: &mut AnimatedComponent,
+    creature_type: &CreatureType,
+    cmd: &mut CommandBuffer,
+    #[resource] animation_mapping: &AnimationMap, ) {
+    if creature_type.creature_type == "rogue" && animation.animated_sprite_label != RogueAnimationStates::RogueDie.to_string() {
+        // Randomly kill rogues
+        let mut rng = rand::thread_rng();
+        let chance = 0.005;
+        let random_number = rng.gen_range(0.0..1.0);
+        if random_number < (chance as f64 / 100.0) {
+            // Change the animation to the death animation
+            let new_animation = RogueAnimationStates::RogueDie.to_string();
+            animation.animated_sprite_label = new_animation;
+            animation.liege_animation = animation_mapping.animations.get(new_animation).unwrap().clone();
+            animation.animation_state = State::new();
+        }
+    } else if creature_type.creature_type == "rogue" && animation.animated_sprite_label == RogueAnimationStates::RogueDie.to_string() {
+        // If the rogue is already dying, check if the animation has ended, and remove the entity when that occurs (after the last frame)
+        if animation.animation_state.is_ended() {
+            cmd.remove(*entity);
+        }
+    }
+}
+
+#[system(for_each)]
 pub fn apply_random_movement_rogue(
     movement: &mut MovementComponent,
     drawable: &mut DrawableComponent,
@@ -16,7 +44,7 @@ pub fn apply_random_movement_rogue(
     creature_type: &mut CreatureType,
     #[resource] map_info: &MapInformation,
     #[resource] animation_mapping: &AnimationMap) {
-    if creature_type.creature_type == "rogue" {
+    if creature_type.creature_type == "rogue" && animation.animated_sprite_label != RogueAnimationStates::RogueDie.to_string() {
         let mut rng = rand::thread_rng();
 
         // Check if this entity has a direction. If not, randomly decide if one should be set, or if it will remain idle

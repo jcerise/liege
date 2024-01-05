@@ -3,7 +3,7 @@ mod components;
 mod systems;
 mod animations;
 
-use crate::systems::{apply_random_movement_goblin_system, apply_random_movement_rogue_system};
+use crate::systems::{apply_random_movement_goblin_system, apply_random_movement_rogue_system, apply_random_rogue_death_system};
 use std::default::Default;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -115,6 +115,7 @@ async fn main() {
     let mut schedule = Schedule::builder()
         .add_system(apply_random_movement_rogue_system())
         .add_system(apply_random_movement_goblin_system())
+        .add_system(apply_random_rogue_death_system())
         .build();
 
     loop {

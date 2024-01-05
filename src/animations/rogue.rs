@@ -204,7 +204,7 @@ pub fn load_rogue_animations() -> HashMap<String, LiegeAnimation> {
             sprite_sheet.frames["rogue_die_26.png"],
 
         ],
-        animation: Animation::from_indices(0..25, FrameRate::from_fps(8.)),
+        animation: Animation::from_indices(0..25, FrameRate::from_fps(8.)).once(),
     };
 
     animations_map.insert("rogue_idle_right".to_string(), rogue_idle_right);
