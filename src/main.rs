@@ -3,6 +3,7 @@ mod components;
 mod systems;
 mod animations;
 
+use crate::systems::apply_random_movement_system;
 use std::default::Default;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -12,7 +13,7 @@ use macroquad::color::{BLACK};
 use macroquad::prelude::*;
 use uuid::Uuid;
 use crate::animations::animation::{AnimationMap, LiegeAnimation, LiegeSprite};
-use crate::animations::rogue::load_rogue_animations;
+use crate::animations::rogue::{load_rogue_animations, RogueAnimationStates};
 use crate::components::{AnimatedComponent, DrawableComponent, MovementComponent};
 use crate::map::GameMap;
 
@@ -66,94 +67,29 @@ async fn main() {
     resources.insert(MapInformation{width: MAP_WIDTH, height: MAP_HEIGHT, tile_size: TILE_SIZE, tile_scale: TILE_SCALE});
     resources.insert(AnimationMap{animations: animation_map});
 
-    // for _ in 0..1000 {
-    // Create a single rogue entity
-    let id = Uuid::new_v4();
-    if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
-        let animation = animation_mapping.animations.get("rogue_attack_right").unwrap().clone();
-        world.push(
-            (
-                DrawableComponent {
-                    position: Vec2::new(100., 100.),
-                    texture_handle: "resources/characters/rogue/rogue.png"
-                },
-                AnimatedComponent {
-                    animated_sprite_label: "rogue_fight_right",
-                    liege_animation: animation,
-                    animation_state: State::new()
-                },
-                MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
-            )
-        );
-
-        let animation = animation_mapping.animations.get("rogue_die").unwrap().clone();
-        world.push(
-            (
-                DrawableComponent {
-                    position: Vec2::new(150., 150.),
-                    texture_handle: "resources/characters/rogue/rogue.png"
-                },
-                AnimatedComponent {
-                    animated_sprite_label: "rogue_die",
-                    liege_animation: animation,
-                    animation_state: State::new()
-                },
-                MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
-            )
-        );
-
-        let animation = animation_mapping.animations.get("rogue_idle_right").unwrap().clone();
-        world.push(
-            (
-                DrawableComponent {
-                    position: Vec2::new(200., 200.),
-                    texture_handle: "resources/characters/rogue/rogue.png"
-                },
-                AnimatedComponent {
-                    animated_sprite_label: "rogue_idle_right",
-                    liege_animation: animation,
-                    animation_state: State::new()
-                },
-                MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
-            )
-        );
-
-        let animation = animation_mapping.animations.get("rogue_attack_up_left").unwrap().clone();
-        world.push(
-            (
-                DrawableComponent {
-                    position: Vec2::new(250., 250.),
-                    texture_handle: "resources/characters/rogue/rogue.png"
-                },
-                AnimatedComponent {
-                    animated_sprite_label: "rogue_attack_up_left",
-                    liege_animation: animation,
-                    animation_state: State::new()
-                },
-                MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
-            )
-        );
-
-        let animation = animation_mapping.animations.get("rogue_walk_right").unwrap().clone();
-        world.push(
-            (
-                DrawableComponent {
-                    position: Vec2::new(300., 300.),
-                    texture_handle: "resources/characters/rogue/rogue.png"
-                },
-                AnimatedComponent {
-                    animated_sprite_label: "rogue_walk_right",
-                    liege_animation: animation,
-                    animation_state: State::new()
-                },
-                MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
-            )
-        );
+    for _ in 0..100 {
+        // Create a single rogue entity
+        if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
+            let animation = animation_mapping.animations.get(RogueAnimationStates::RogueIdleRight.to_string()).unwrap().clone();
+            world.push(
+                (
+                    DrawableComponent {
+                        position: Vec2::new(100., 100.),
+                        texture_handle: "resources/characters/rogue/rogue.png"
+                    },
+                    AnimatedComponent {
+                        animated_sprite_label: RogueAnimationStates::RogueIdleRight.to_string(),
+                        liege_animation: animation,
+                        animation_state: State::new()
+                    },
+                    MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
+                )
+            );
+        }
     }
-    // }
 
     let mut schedule = Schedule::builder()
-        // .add_system(apply_random_movement_system())
+        .add_system(apply_random_movement_system())
         .build();
 
     loop {

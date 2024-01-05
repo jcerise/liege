@@ -2,6 +2,38 @@ use std::collections::HashMap;
 use benimator::{Animation, FrameRate};
 use crate::animations::animation::LiegeAnimation;
 
+pub enum RogueAnimationStates {
+    RogueIdleRight,
+    RogueIdleLeft,
+    RogueDie,
+    RogueAttackRight,
+    RogueAttackLeft,
+    RogueAttackUpRight,
+    RogueAttackUpLeft,
+    RogueWalkRight,
+    RogueWalkLeft,
+    RogueWalkUpRight,
+    RogueWalkUpLeft
+}
+
+impl RogueAnimationStates {
+    pub fn to_string(&self) -> &str {
+        match self {
+            RogueAnimationStates::RogueIdleRight => "rogue_idle_right",
+            RogueAnimationStates::RogueIdleLeft => "rogue_idle_left",
+            RogueAnimationStates::RogueDie => "rogue_die",
+            RogueAnimationStates::RogueAttackRight => "rogue_attack_right",
+            RogueAnimationStates::RogueAttackLeft => "rogue_attack_left",
+            RogueAnimationStates::RogueAttackUpRight => "rogue_attack_up_right",
+            RogueAnimationStates::RogueAttackUpLeft => "rogue_attack_up_left",
+            RogueAnimationStates::RogueWalkRight => "rogue_walk_right",
+            RogueAnimationStates::RogueWalkLeft => "rogue_walk_left",
+            RogueAnimationStates::RogueWalkUpRight => "rogue_walk_up_right",
+            RogueAnimationStates::RogueWalkUpLeft => "rogue_walk_up_left"
+        }
+    }
+}
+
 pub fn load_rogue_animations() -> HashMap<String, LiegeAnimation> {
     // Load and deserialize our spritesheet information
     let file_content = match crate::animations::animation::read_json_file("resources/characters/rogue/rogue.json") {
