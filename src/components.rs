@@ -29,3 +29,8 @@ pub struct AnimatedComponent<'a> {
     pub liege_animation: LiegeAnimation,
     pub animation_state: State,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CreatureType<'a> {
+    pub creature_type: &'a str
+}

@@ -3,7 +3,7 @@ mod components;
 mod systems;
 mod animations;
 
-use crate::systems::apply_random_movement_system;
+use crate::systems::{apply_random_movement_goblin_system, apply_random_movement_rogue_system};
 use std::default::Default;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -11,10 +11,10 @@ use benimator::State;
 use legion::{IntoQuery, Read, Resources, Schedule, World, Write};
 use macroquad::color::{BLACK};
 use macroquad::prelude::*;
-use uuid::Uuid;
 use crate::animations::animation::{AnimationMap, LiegeAnimation, LiegeSprite};
+use crate::animations::goblin::{GoblinAnimationStates, load_goblin_animations};
 use crate::animations::rogue::{load_rogue_animations, RogueAnimationStates};
-use crate::components::{AnimatedComponent, DrawableComponent, MovementComponent};
+use crate::components::{AnimatedComponent, CreatureType, DrawableComponent, MovementComponent};
 use crate::map::GameMap;
 
 const TILE_SIZE: f32 = 8.;
@@ -54,6 +54,7 @@ async fn main() {
     game_map.generate_noise_map();
 
     let mut animation_map = load_rogue_animations();
+    animation_map.extend(load_goblin_animations());
 
     let mut camera = Camera2D {
         target: vec2(screen_width() / 2., screen_height() / 2.),
@@ -82,14 +83,38 @@ async fn main() {
                         liege_animation: animation,
                         animation_state: State::new()
                     },
-                    MovementComponent{ destination: Vec2::ZERO, speed: 0.5}
+                    MovementComponent{ destination: Vec2::ZERO, speed: 0.5},
+                    CreatureType { creature_type: "rogue" },
+                )
+            );
+        }
+    }
+
+    for _ in 0..100 {
+        // Create a single goblin entity
+        if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
+            let animation = animation_mapping.animations.get(GoblinAnimationStates::GoblinIdleRight.to_string()).unwrap().clone();
+            world.push(
+                (
+                    DrawableComponent {
+                        position: Vec2::new(100., 100.),
+                        texture_handle: "resources/characters/goblin/goblin.png"
+                    },
+                    AnimatedComponent {
+                        animated_sprite_label: GoblinAnimationStates::GoblinIdleRight.to_string(),
+                        liege_animation: animation,
+                        animation_state: State::new()
+                    },
+                    MovementComponent{ destination: Vec2::ZERO, speed: 0.5},
+                    CreatureType { creature_type: "goblin" },
                 )
             );
         }
     }
 
     let mut schedule = Schedule::builder()
-        .add_system(apply_random_movement_system())
+        .add_system(apply_random_movement_rogue_system())
+        .add_system(apply_random_movement_goblin_system())
         .build();
 
     loop {
@@ -181,7 +206,8 @@ async fn load_resources() -> HashMap<String, Texture2D> {
     let texture_paths = vec![
         "resources/map/grass_tiles.png",
         "resources/map/plains.png",
-        "resources/characters/rogue/rogue.png"
+        "resources/characters/rogue/rogue.png",
+        "resources/characters/goblin/goblin.png"
     ];
 
     for path in texture_paths {
