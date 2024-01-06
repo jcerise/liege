@@ -133,12 +133,78 @@ pub fn load_goblin_animations() -> HashMap<String, LiegeAnimation> {
         animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
     };
 
+    let goblin_attack_right = LiegeAnimation{
+        frames: vec![
+            sprite_sheet.frames["goblin_attack_right_1.png"],
+            sprite_sheet.frames["goblin_attack_right_2.png"],
+            sprite_sheet.frames["goblin_attack_right_3.png"],
+            sprite_sheet.frames["goblin_attack_right_4.png"],
+
+        ],
+        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
+    };
+
+    let goblin_attack_up_right = LiegeAnimation{
+        frames: vec![
+            sprite_sheet.frames["goblin_attack_up_right_1.png"],
+            sprite_sheet.frames["goblin_attack_up_right_2.png"],
+            sprite_sheet.frames["goblin_attack_up_right_3.png"],
+            sprite_sheet.frames["goblin_attack_up_right_4.png"],
+
+        ],
+        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
+    };
+    let goblin_attack_left = LiegeAnimation{
+        frames: vec![
+            sprite_sheet.frames["goblin_attack_left_1.png"],
+            sprite_sheet.frames["goblin_attack_left_2.png"],
+            sprite_sheet.frames["goblin_attack_left_3.png"],
+            sprite_sheet.frames["goblin_attack_left_4.png"],
+
+        ],
+        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
+    };
+    let goblin_attack_up_left = LiegeAnimation{
+        frames: vec![
+            sprite_sheet.frames["goblin_attack_up_left_1.png"],
+            sprite_sheet.frames["goblin_attack_up_left_2.png"],
+            sprite_sheet.frames["goblin_attack_up_left_3.png"],
+            sprite_sheet.frames["goblin_attack_up_left_4.png"],
+
+        ],
+        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
+    };
+
+    let goblin_die = LiegeAnimation{
+        frames: vec![
+            sprite_sheet.frames["goblin_die_1.png"],
+            sprite_sheet.frames["goblin_die_2.png"],
+            sprite_sheet.frames["goblin_die_3.png"],
+            sprite_sheet.frames["goblin_die_4.png"],
+            sprite_sheet.frames["goblin_die_5.png"],
+            sprite_sheet.frames["goblin_die_6.png"],
+            sprite_sheet.frames["goblin_die_7.png"],
+            sprite_sheet.frames["goblin_die_8.png"],
+            sprite_sheet.frames["goblin_die_9.png"],
+            sprite_sheet.frames["goblin_die_10.png"],
+            sprite_sheet.frames["goblin_die_11.png"],
+            sprite_sheet.frames["goblin_die_12.png"],
+
+        ],
+        animation: Animation::from_indices(0..11, FrameRate::from_fps(8.)),
+    };
+
     animations_map.insert("goblin_idle_right".to_string(), goblin_idle_right);
     animations_map.insert("goblin_idle_left".to_string(), goblin_idle_left);
     animations_map.insert("goblin_walk_right".to_string(), goblin_walk_right);
     animations_map.insert("goblin_walk_left".to_string(), goblin_walk_left);
     animations_map.insert("goblin_walk_up_right".to_string(), goblin_walk_up_rightight);
     animations_map.insert("goblin_walk_up_left".to_string(), goblin_walk_up_left);
+    animations_map.insert("goblin_attack_right".to_string(), goblin_attack_right);
+    animations_map.insert("goblin_attack_up_right".to_string(), goblin_attack_up_right);
+    animations_map.insert("goblin_attack_left".to_string(), goblin_attack_left);
+    animations_map.insert("goblin_attack_up_left".to_string(), goblin_attack_up_left);
+    animations_map.insert("goblin_die".to_string(), goblin_die);
 
     animations_map
 }
