@@ -2,38 +2,6 @@ use std::collections::HashMap;
 use benimator::{Animation, FrameRate};
 use crate::animations::animation::LiegeAnimation;
 
-pub enum GoblinAnimationStates {
-    GoblinIdleRight,
-    GoblinIdleLeft,
-    GoblinDie,
-    GoblinAttackRight,
-    GoblinAttackLeft,
-    GoblinAttackUpRight,
-    GoblinAttackUpLeft,
-    GoblinWalkRight,
-    GoblinWalkLeft,
-    GoblinWalkUpRight,
-    GoblinWalkUpLeft
-}
-
-impl GoblinAnimationStates {
-    pub fn to_string(&self) -> &str {
-        match self {
-            GoblinAnimationStates::GoblinIdleRight => "goblin_idle_right",
-            GoblinAnimationStates::GoblinIdleLeft => "goblin_idle_left",
-            GoblinAnimationStates::GoblinDie => "goblin_die",
-            GoblinAnimationStates::GoblinAttackRight => "goblin_attack_right",
-            GoblinAnimationStates::GoblinAttackLeft => "goblin_attack_left",
-            GoblinAnimationStates::GoblinAttackUpRight => "goblin_attack_up_right",
-            GoblinAnimationStates::GoblinAttackUpLeft => "goblin_attack_up_left",
-            GoblinAnimationStates::GoblinWalkRight => "goblin_walk_right",
-            GoblinAnimationStates::GoblinWalkLeft => "goblin_walk_left",
-            GoblinAnimationStates::GoblinWalkUpRight => "goblin_walk_up_right",
-            GoblinAnimationStates::GoblinWalkUpLeft => "goblin_walk_up_left"
-        }
-    }
-}
-
 pub fn load_goblin_animations() -> HashMap<String, LiegeAnimation> {
     // Load and deserialize our spritesheet information
     let file_content = match crate::animations::animation::read_json_file("resources/characters/goblin/goblin.json") {
@@ -100,7 +68,7 @@ pub fn load_goblin_animations() -> HashMap<String, LiegeAnimation> {
             sprite_sheet.frames["goblin_walk_right_4.png"],
 
         ],
-        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
+        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)).ping_pong(),
     };
     let goblin_walk_left = LiegeAnimation{
         frames: vec![
@@ -110,7 +78,7 @@ pub fn load_goblin_animations() -> HashMap<String, LiegeAnimation> {
             sprite_sheet.frames["goblin_walk_left_4.png"],
 
         ],
-        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
+        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)).ping_pong(),
     };
     let goblin_walk_up_rightight = LiegeAnimation{
         frames: vec![
@@ -120,7 +88,7 @@ pub fn load_goblin_animations() -> HashMap<String, LiegeAnimation> {
             sprite_sheet.frames["goblin_walk_up_right_4.png"],
 
         ],
-        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
+        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)).ping_pong(),
     };
     let goblin_walk_up_left = LiegeAnimation{
         frames: vec![
@@ -130,7 +98,7 @@ pub fn load_goblin_animations() -> HashMap<String, LiegeAnimation> {
             sprite_sheet.frames["goblin_walk_up_left_4.png"],
 
         ],
-        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)),
+        animation: Animation::from_indices(0..3, FrameRate::from_fps(8.)).ping_pong(),
     };
 
     let goblin_attack_right = LiegeAnimation{
@@ -191,7 +159,7 @@ pub fn load_goblin_animations() -> HashMap<String, LiegeAnimation> {
             sprite_sheet.frames["goblin_die_12.png"],
 
         ],
-        animation: Animation::from_indices(0..11, FrameRate::from_fps(8.)),
+        animation: Animation::from_indices(0..11, FrameRate::from_fps(8.)).once(),
     };
 
     animations_map.insert("goblin_idle_right".to_string(), goblin_idle_right);

@@ -24,13 +24,13 @@ pub struct MovementComponent {
 }
 
 #[derive(Clone)]
-pub struct AnimatedComponent<'a> {
-    pub animated_sprite_label: &'a str,
+pub struct AnimatedComponent {
+    pub animated_sprite_label: String,
     pub liege_animation: LiegeAnimation,
     pub animation_state: State,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct CreatureType<'a> {
-    pub creature_type: &'a str
+pub struct EntityKind<'a> {
+    pub kind: &'a str
 }

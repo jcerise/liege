@@ -3,7 +3,7 @@ mod components;
 mod systems;
 mod animations;
 
-use crate::systems::{apply_random_movement_goblin_system, apply_random_movement_rogue_system, apply_random_rogue_death_system};
+use crate::systems::{apply_random_death_system, apply_random_movement_system};
 use std::default::Default;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -11,10 +11,10 @@ use benimator::State;
 use legion::{IntoQuery, Read, Resources, Schedule, World, Write};
 use macroquad::color::{BLACK};
 use macroquad::prelude::*;
-use crate::animations::animation::{AnimationMap, LiegeAnimation, LiegeSprite};
-use crate::animations::goblin::{GoblinAnimationStates, load_goblin_animations};
-use crate::animations::rogue::{load_rogue_animations, RogueAnimationStates};
-use crate::components::{AnimatedComponent, CreatureType, DrawableComponent, MovementComponent};
+use crate::animations::animation::{AnimationMap, AnimationStates, LiegeAnimation, LiegeSprite};
+use crate::animations::goblin::{load_goblin_animations};
+use crate::animations::rogue::{load_rogue_animations};
+use crate::components::{AnimatedComponent, EntityKind, DrawableComponent, MovementComponent};
 use crate::map::GameMap;
 
 const TILE_SIZE: f32 = 8.;
@@ -36,6 +36,20 @@ pub struct MapInformation {
     height: i32,
     tile_size: f32,
     tile_scale: Vec2,
+}
+
+pub enum CreatureType {
+    Rogue,
+    Goblin,
+}
+
+impl CreatureType {
+    pub fn to_str(&self) -> &str {
+        match self {
+            CreatureType::Rogue => "rogue",
+            CreatureType::Goblin => "goblin",
+        }
+    }
 }
 
 fn conf() -> Conf {
@@ -68,10 +82,10 @@ async fn main() {
     resources.insert(MapInformation{width: MAP_WIDTH, height: MAP_HEIGHT, tile_size: TILE_SIZE, tile_scale: TILE_SCALE});
     resources.insert(AnimationMap{animations: animation_map});
 
-    for _ in 0..100 {
+    for _ in 0..50 {
         // Create a single rogue entity
         if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
-            let animation = animation_mapping.animations.get(RogueAnimationStates::RogueIdleRight.to_string()).unwrap().clone();
+            let animation = animation_mapping.animations.get("rogue_idle_right").unwrap().clone();
             world.push(
                 (
                     DrawableComponent {
@@ -79,21 +93,21 @@ async fn main() {
                         texture_handle: "resources/characters/rogue/rogue.png"
                     },
                     AnimatedComponent {
-                        animated_sprite_label: RogueAnimationStates::RogueIdleRight.to_string(),
+                        animated_sprite_label: "rogue_idle_right".to_string(),
                         liege_animation: animation,
                         animation_state: State::new()
                     },
                     MovementComponent{ destination: Vec2::ZERO, speed: 0.5},
-                    CreatureType { creature_type: "rogue" },
+                    EntityKind { kind: CreatureType::Rogue.to_str() },
                 )
             );
         }
     }
 
-    for _ in 0..100 {
+    for _ in 0..50 {
         // Create a single goblin entity
         if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
-            let animation = animation_mapping.animations.get(GoblinAnimationStates::GoblinIdleRight.to_string()).unwrap().clone();
+            let animation = animation_mapping.animations.get("goblin_idle_right").unwrap().clone();
             world.push(
                 (
                     DrawableComponent {
@@ -101,21 +115,20 @@ async fn main() {
                         texture_handle: "resources/characters/goblin/goblin.png"
                     },
                     AnimatedComponent {
-                        animated_sprite_label: GoblinAnimationStates::GoblinIdleRight.to_string(),
+                        animated_sprite_label: "goblin_idle_right".to_string(),
                         liege_animation: animation,
                         animation_state: State::new()
                     },
                     MovementComponent{ destination: Vec2::ZERO, speed: 0.5},
-                    CreatureType { creature_type: "goblin" },
+                    EntityKind { kind: CreatureType::Goblin.to_str() },
                 )
             );
         }
     }
 
     let mut schedule = Schedule::builder()
-        .add_system(apply_random_movement_rogue_system())
-        .add_system(apply_random_movement_goblin_system())
-        .add_system(apply_random_rogue_death_system())
+        .add_system(apply_random_movement_system())
+        .add_system(apply_random_death_system())
         .build();
 
     loop {

@@ -3,6 +3,42 @@ use std::fs;
 use benimator::{Animation};
 use serde::{Deserialize, Serialize};
 
+pub enum AnimationStates {
+    IdleRight,
+    IdleLeft,
+    Die,
+    AttackRight,
+    AttackLeft,
+    AttackUpRight,
+    AttackUpLeft,
+    WalkRight,
+    WalkLeft,
+    WalkUpRight,
+    WalkUpLeft
+}
+
+impl AnimationStates {
+    pub fn to_str(&self) -> &str {
+        match self {
+            AnimationStates::IdleRight => "_idle_right",
+            AnimationStates::IdleLeft => "_idle_left",
+            AnimationStates::Die => "_die",
+            AnimationStates::AttackRight => "_attack_right",
+            AnimationStates::AttackLeft => "_attack_left",
+            AnimationStates::AttackUpRight => "_attack_up_right",
+            AnimationStates::AttackUpLeft => "_attack_up_left",
+            AnimationStates::WalkRight => "_walk_right",
+            AnimationStates::WalkLeft => "_walk_left",
+            AnimationStates::WalkUpRight => "_walk_up_right",
+            AnimationStates::WalkUpLeft => "_walk_up_left"
+        }
+    }
+
+    pub fn get_creature_animation(&self, creature_type: &str) -> String {
+        format!("{}{}", creature_type, self.to_str())
+    }
+}
+
 pub struct AnimationMap {
     pub animations: HashMap<String, LiegeAnimation>
 }
