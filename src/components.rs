@@ -34,3 +34,8 @@ pub struct AnimatedComponent    {
 pub struct EntityKind<'a> {
     pub kind: &'a str
 }
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SelectedComponent {
+    pub selected: bool
+}

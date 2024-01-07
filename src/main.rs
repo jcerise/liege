@@ -8,14 +8,16 @@ use std::default::Default;
 use std::collections::HashMap;
 use std::time::Duration;
 use benimator::State;
-use legion::{IntoQuery, Read, Resources, Schedule, World, Write};
+use legion::{Entity, IntoQuery, Read, Resources, Schedule, World, Write};
 use macroquad::color::{BLACK};
 use macroquad::prelude::*;
+use rand::Rng;
 use crate::animations::animation::{AnimationMap, AnimationStates, LiegeAnimation, LiegeSprite};
 use crate::animations::goblin::{load_goblin_animations};
 use crate::animations::rogue::{load_rogue_animations};
-use crate::components::{AnimatedComponent, EntityKind, DrawableComponent, MovementComponent};
+use crate::components::{AnimatedComponent, EntityKind, DrawableComponent, MovementComponent, SelectedComponent};
 use crate::map::GameMap;
+extern crate rand;
 
 const TILE_SIZE: f32 = 8.;
 const SPRITE_SIZE: f32 = 9.;
@@ -29,6 +31,7 @@ struct RenderData<'a> {
     texture_handle: &'a str,
     animation: LiegeAnimation,
     state: State,
+    selected: bool,
 }
 
 pub struct MapInformation {
@@ -63,6 +66,11 @@ fn conf() -> Conf {
 
 #[macroquad::main(conf)]
 async fn main() {
+    let mut show_debug = false;
+    let mut paused = false;
+
+    let mut rng = rand::thread_rng();
+
     let mut texture_map = load_resources().await;
     let mut game_map = GameMap::new(MAP_WIDTH, MAP_HEIGHT);
     game_map.generate_noise_map();
@@ -82,7 +90,7 @@ async fn main() {
     resources.insert(MapInformation{width: MAP_WIDTH, height: MAP_HEIGHT, tile_size: TILE_SIZE, tile_scale: TILE_SCALE});
     resources.insert(AnimationMap{animations: animation_map});
 
-    for _ in 0..50 {
+    for _ in 0..5 {
         // Create a single rogue entity
         if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
             let animation = animation_mapping.animations.get("rogue_idle_right").unwrap().clone();
@@ -99,12 +107,13 @@ async fn main() {
                     },
                     MovementComponent{ destination: Vec2::ZERO, speed: 0.5},
                     EntityKind { kind: CreatureType::Rogue.to_str() },
+                    SelectedComponent { selected: false }
                 )
             );
         }
     }
 
-    for _ in 0..50 {
+    for _ in 0..5 {
         // Create a single goblin entity
         if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
             let animation = animation_mapping.animations.get("goblin_idle_right").unwrap().clone();
@@ -121,6 +130,7 @@ async fn main() {
                     },
                     MovementComponent{ destination: Vec2::ZERO, speed: 0.5},
                     EntityKind { kind: CreatureType::Goblin.to_str() },
+                    SelectedComponent { selected: false }
                 )
             );
         }
@@ -128,14 +138,16 @@ async fn main() {
 
     let mut schedule = Schedule::builder()
         .add_system(apply_random_movement_system())
-        .add_system(apply_random_death_system())
+        //.add_system(apply_random_death_system())
         .build();
 
     loop {
         clear_background(BLACK);
 
         // Execute all systems
-        schedule.execute(&mut world, &mut resources);
+        if !paused {
+            schedule.execute(&mut world, &mut resources);
+        }
 
         set_camera(&camera);
 
@@ -159,13 +171,14 @@ async fn main() {
         }
 
         let mut render_data = Vec::new();
-        let mut query = <(Read<DrawableComponent>, Read<AnimatedComponent>)>::query();
-        for (drawable, animated) in query.iter(&world) {
+        let mut query = <(Read<DrawableComponent>, Read<AnimatedComponent>, Read<SelectedComponent>)>::query();
+        for (drawable, animated, selected) in query.iter(&world) {
             render_data.push(RenderData {
                 position: drawable.position,
                 texture_handle: drawable.texture_handle,
                 animation: animated.liege_animation.clone(),
-                state: animated.animation_state.clone()
+                state: animated.animation_state.clone(),
+                selected: selected.selected,
             });
         }
 
@@ -180,21 +193,77 @@ async fn main() {
                 };
 
                 draw_texture_ex(texture_map.get(data.texture_handle).unwrap(), data.position.x, data.position.y, WHITE, draw_params);
+
+                if data.selected {
+                    // This entity is currently selected by the player, draw a selection rectangle around the entity sprite
+                    let scaled_size = SPRITE_SCALE * vec2(frame.frame.w as f32, frame.frame.h as f32);
+                    draw_rectangle_lines(data.position.x, data.position.y, scaled_size.x, scaled_size.y, 2.0, RED);
+                }
             }
         }
 
         // Check for mouse clicks, capture the position
         if is_mouse_button_pressed(MouseButton::Left) {
-            let click_position = Vec2::from(mouse_position());
-            println!("Clicked mouse at: {}", click_position);
-            let mut query = <(Read<DrawableComponent>, Read<AnimatedComponent>, Read<EntityKind>)>::query();
-            for (drawable, animated, kind) in query.iter(&world) {
+            let click_position = camera.screen_to_world(Vec2::from(mouse_position()));
+            let mut query = <(Read<DrawableComponent>, Read<AnimatedComponent>, Read<EntityKind>, Write<SelectedComponent>)>::query();
+            for (drawable, animated, kind, selected) in query.iter_mut(&mut world) {
                 // Check all entities for the coordinates of the mouse click
                 let frame = animated.liege_animation.frames[animated.animation_state.frame_index()];
                 let scaled_size = SPRITE_SCALE * vec2(frame.frame.w as f32, frame.frame.h as f32);
                 if click_position.x >= drawable.position.x && click_position.x <= drawable.position.x + scaled_size.x &&
                     click_position.y >= drawable.position.y && click_position.y <= drawable.position.y + scaled_size.y {
-                    println!("Clicked on a {}", kind.kind);
+                    selected.selected = true;
+                } else {
+                    // This entity was not selected, so mark it as not selected. This will also clear current selection
+                    // if empty space is clicked
+                    selected.selected = false;
+                }
+            }
+        } else if is_mouse_button_pressed(MouseButton::Right) {
+            // Spawn a new random entity (Rogue or Goblin, currently)
+            let random_choice = rng.gen_range(0..2);
+            let click_position = camera.screen_to_world(Vec2::from(mouse_position()));
+            if random_choice == 0 {
+                // Create a Rogue
+                if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
+                    let animation = animation_mapping.animations.get("rogue_idle_right").unwrap().clone();
+                    world.push(
+                        (
+                            DrawableComponent {
+                                position: Vec2::new(click_position.x, click_position.y),
+                                texture_handle: "resources/characters/rogue/rogue.png"
+                            },
+                            AnimatedComponent {
+                                animated_sprite_label: "rogue_idle_right".to_string(),
+                                liege_animation: animation,
+                                animation_state: State::new()
+                            },
+                            MovementComponent{ destination: Vec2::ZERO, speed: 0.5},
+                            EntityKind { kind: CreatureType::Rogue.to_str() },
+                            SelectedComponent { selected: false }
+                        )
+                    );
+                }
+            } else {
+                // Create a Goblin
+                if let Some(mut animation_mapping) = resources.get_mut::<AnimationMap>() {
+                    let animation = animation_mapping.animations.get("goblin_idle_right").unwrap().clone();
+                    world.push(
+                        (
+                            DrawableComponent {
+                                position: Vec2::new(click_position.x, click_position.y),
+                                texture_handle: "resources/characters/goblin/goblin.png"
+                            },
+                            AnimatedComponent {
+                                animated_sprite_label: "goblin_idle_right".to_string(),
+                                liege_animation: animation,
+                                animation_state: State::new()
+                            },
+                            MovementComponent{ destination: Vec2::ZERO, speed: 0.5},
+                            EntityKind { kind: CreatureType::Goblin.to_str() },
+                            SelectedComponent { selected: false }
+                        )
+                    );
                 }
             }
         }
@@ -211,20 +280,39 @@ async fn main() {
         if is_key_down(KeyCode::Right) {
             camera.target.x += 4.0;
         }
+        if is_key_pressed(KeyCode::Space) {
+            paused = !paused;
+        }
+        if is_key_down(KeyCode::LeftShift) && is_key_down(KeyCode::D) {
+            show_debug = !show_debug;
+        }
 
         set_default_camera();
 
-        // Debug information, printed in screen space
-        let entity_count = world.len();
-        draw_text(&format!("FPS: {}", get_fps()), 10., 20., 20., WHITE);
-        draw_text(&format!("Entity Count: {}", entity_count), 10., 30., 20., WHITE);
+        if show_debug {
+            // Debug information, printed in screen space
+            let entity_count = world.len();
+            draw_text(&format!("FPS: {}", get_fps()), 10., 20., 20., WHITE);
+            draw_text(&format!("Entity Count: {}", entity_count), 10., 31., 20., WHITE);
+            draw_text(&format!("Current Mouse Position (Screen): {}", Vec2::from(mouse_position())), 10., 42., 20., WHITE);
+            draw_text(&format!("Current Mouse Position (World): {}", camera.screen_to_world(Vec2::from(mouse_position()))), 10., 53., 20., WHITE);
 
-        let mut query = <(Write<AnimatedComponent>)>::query();
-        for mut animated in query.iter_mut(&mut world) {
-            // Weird: We have to convert to nanoseconds, or we lose precision in the Duration object, and our animations
-            // never update.
-            let nanos = (get_frame_time() * 1_000_000_000.0) as u64;
-            animated.animation_state.update(&animated.liege_animation.animation, Duration::from_nanos(nanos));
+            let mut query = <(Entity, Read<EntityKind>, Read<SelectedComponent>)>::query();
+            for (entity, kind, selected) in query.iter(&world) {
+                if selected.selected {
+                    draw_text(&format!("Selected Entity: {:?}, {}", entity, kind.kind), 10., 64., 20., WHITE);
+                }
+            }
+        }
+
+        if !paused {
+            let mut query = <(Write<AnimatedComponent>)>::query();
+            for mut animated in query.iter_mut(&mut world) {
+                // Weird: We have to convert to nanoseconds, or we lose precision in the Duration object, and our animations
+                // never update.
+                let nanos = (get_frame_time() * 1_000_000_000.0) as u64;
+                animated.animation_state.update(&animated.liege_animation.animation, Duration::from_nanos(nanos));
+            }
         }
 
         next_frame().await;
