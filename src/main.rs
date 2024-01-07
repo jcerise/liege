@@ -183,6 +183,22 @@ async fn main() {
             }
         }
 
+        // Check for mouse clicks, capture the position
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let click_position = Vec2::from(mouse_position());
+            println!("Clicked mouse at: {}", click_position);
+            let mut query = <(Read<DrawableComponent>, Read<AnimatedComponent>, Read<EntityKind>)>::query();
+            for (drawable, animated, kind) in query.iter(&world) {
+                // Check all entities for the coordinates of the mouse click
+                let frame = animated.liege_animation.frames[animated.animation_state.frame_index()];
+                let scaled_size = SPRITE_SCALE * vec2(frame.frame.w as f32, frame.frame.h as f32);
+                if click_position.x >= drawable.position.x && click_position.x <= drawable.position.x + scaled_size.x &&
+                    click_position.y >= drawable.position.y && click_position.y <= drawable.position.y + scaled_size.y {
+                    println!("Clicked on a {}", kind.kind);
+                }
+            }
+        }
+
         if is_key_down(KeyCode::Up) {
             camera.target.y -= 4.0;
         }

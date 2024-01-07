@@ -24,7 +24,7 @@ pub struct MovementComponent {
 }
 
 #[derive(Clone)]
-pub struct AnimatedComponent {
+pub struct AnimatedComponent    {
     pub animated_sprite_label: String,
     pub liege_animation: LiegeAnimation,
     pub animation_state: State,
