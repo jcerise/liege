@@ -12,7 +12,8 @@ use legion::{Entity, IntoQuery, Read, Resources, Schedule, World, Write};
 use macroquad::color::{BLACK};
 use macroquad::prelude::*;
 use rand::Rng;
-use crate::animations::animation::{AnimationMap, AnimationStates, LiegeAnimation, LiegeSprite};
+use crate::animations::animation::{AnimationMap, AnimationStates, LiegeAnimation, LiegeSprite, LiegeUIAnimation, UIAnimationMap};
+use crate::animations::cursor::load_cursor_animations;
 use crate::animations::goblin::{load_goblin_animations};
 use crate::animations::rogue::{load_rogue_animations};
 use crate::components::{AnimatedComponent, EntityKind, DrawableComponent, MovementComponent, SelectedComponent};
@@ -69,6 +70,10 @@ async fn main() {
     let mut show_debug = false;
     let mut paused = false;
 
+    // Hide the cursor, so we can draw our own custom cursor, and create an animation to use for the cursor
+    show_mouse(false);
+
+
     let mut rng = rand::thread_rng();
 
     let mut texture_map = load_resources().await;
@@ -77,6 +82,8 @@ async fn main() {
 
     let mut animation_map = load_rogue_animations();
     animation_map.extend(load_goblin_animations());
+
+    let mut ui_animation_map = load_cursor_animations();
 
     let mut camera = Camera2D {
         target: vec2(screen_width() / 2., screen_height() / 2.),
@@ -89,6 +96,7 @@ async fn main() {
 
     resources.insert(MapInformation{width: MAP_WIDTH, height: MAP_HEIGHT, tile_size: TILE_SIZE, tile_scale: TILE_SCALE});
     resources.insert(AnimationMap{animations: animation_map});
+    resources.insert(UIAnimationMap{animations: ui_animation_map});
 
     for _ in 0..5 {
         // Create a single rogue entity
@@ -140,6 +148,9 @@ async fn main() {
         .add_system(apply_random_movement_system())
         //.add_system(apply_random_death_system())
         .build();
+
+    // Build a vector of current UI animations that will be run every frame
+    let mut current_ui_animations: Vec<LiegeUIAnimation> = Vec::new();
 
     loop {
         clear_background(BLACK);
@@ -202,9 +213,34 @@ async fn main() {
             }
         }
 
+        // Draw our custom mouse cursor
+        let (mouse_x, mouse_y) = mouse_position();
+        if let Some(mut animation_mapping) = resources.get_mut::<UIAnimationMap>() {
+            if let Some(cursor_animation) = animation_mapping.animations.get("cursor_idle") {
+                let frame: LiegeSprite = cursor_animation.frames[0].clone();
+                let source_rect = Rect::new(frame.frame.x as f32, frame.frame.y as f32, frame.frame.w as f32, frame.frame.h as f32);
+                let draw_params = DrawTextureParams{
+                    source: Some(source_rect),
+                    dest_size: Option::from((SPRITE_SCALE * vec2(frame.source_size.w as f32, frame.source_size.h as f32))),
+                    ..Default::default()
+                };
+
+                draw_texture_ex(texture_map.get("resources/ui/cursor/cursor.png").unwrap(), mouse_x, mouse_y, WHITE, draw_params);
+            }
+
+        }
+
         // Check for mouse clicks, capture the position
         if is_mouse_button_pressed(MouseButton::Left) {
             let click_position = camera.screen_to_world(Vec2::from(mouse_position()));
+
+            // Before we do anything else, kick off a new UI animation for the click
+            if let Some(mut ui_animation_mapping) = resources.get_mut::<UIAnimationMap>() {
+                let mut click_anim = ui_animation_mapping.animations.get("cursor_click").unwrap().clone();
+                click_anim.position = click_position - 8.;
+                current_ui_animations.push(click_anim);
+            }
+
             let mut query = <(Read<DrawableComponent>, Read<AnimatedComponent>, Read<EntityKind>, Write<SelectedComponent>)>::query();
             for (drawable, animated, kind, selected) in query.iter_mut(&mut world) {
                 // Check all entities for the coordinates of the mouse click
@@ -305,15 +341,32 @@ async fn main() {
             }
         }
 
+        let nanos = (get_frame_time() * 1_000_000_000.0) as u64;
         if !paused {
             let mut query = <(Write<AnimatedComponent>)>::query();
             for mut animated in query.iter_mut(&mut world) {
                 // Weird: We have to convert to nanoseconds, or we lose precision in the Duration object, and our animations
                 // never update.
-                let nanos = (get_frame_time() * 1_000_000_000.0) as u64;
                 animated.animation_state.update(&animated.liege_animation.animation, Duration::from_nanos(nanos));
             }
         }
+
+        // Run any UI animtations
+        for mut animation in current_ui_animations.iter_mut() {
+            let frame: LiegeSprite = animation.frames[animation.state.frame_index()].clone();
+            let source_rect = Rect::new(frame.frame.x as f32, frame.frame.y as f32, frame.frame.w as f32, frame.frame.h as f32);
+            let draw_params = DrawTextureParams{
+                source: Some(source_rect),
+                dest_size: Option::from((SPRITE_SCALE * vec2(frame.source_size.w as f32, frame.source_size.h as f32))),
+                ..Default::default()
+            };
+
+            draw_texture_ex(texture_map.get(animation.texture_handle).unwrap(), animation.position.x, animation.position.y, WHITE, draw_params);
+
+            animation.state.update(&animation.animation, Duration::from_nanos(nanos));
+        }
+        // Clear out any UI animations that have finished running
+        current_ui_animations.retain(|x| !x.state.is_ended());
 
         next_frame().await;
     }
@@ -325,7 +378,8 @@ async fn load_resources() -> HashMap<String, Texture2D> {
         "resources/map/grass_tiles.png",
         "resources/map/plains.png",
         "resources/characters/rogue/rogue.png",
-        "resources/characters/goblin/goblin.png"
+        "resources/characters/goblin/goblin.png",
+        "resources/ui/cursor/cursor.png",
     ];
 
     for path in texture_paths {

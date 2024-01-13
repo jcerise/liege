@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
-use benimator::{Animation};
+use benimator::{Animation, State};
+use macroquad::math::Vec2;
 use serde::{Deserialize, Serialize};
 
 pub enum AnimationStates {
@@ -43,6 +44,10 @@ pub struct AnimationMap {
     pub animations: HashMap<String, LiegeAnimation>
 }
 
+pub struct UIAnimationMap<'a> {
+    pub animations: HashMap<String, LiegeUIAnimation<'a>>
+}
+
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
 pub struct Frame {
     pub x: i32,
@@ -77,6 +82,15 @@ pub struct SpriteSheet {
 pub struct LiegeAnimation {
     pub(crate) frames: Vec<LiegeSprite>,
     pub(crate) animation: Animation,
+}
+
+#[derive(Clone)]
+pub struct LiegeUIAnimation<'a> {
+    pub(crate) frames: Vec<LiegeSprite>,
+    pub(crate) animation: Animation,
+    pub(crate) texture_handle: &'a str,
+    pub(crate) position: Vec2,
+    pub(crate) state: State,
 }
 
 pub(crate) fn read_json_file(file_path: &str) -> Result<String, std::io::Error> {
