@@ -214,7 +214,7 @@ async fn main() {
         }
 
         // Draw our custom mouse cursor
-        let (mouse_x, mouse_y) = mouse_position();
+        let cur_mouse_position = camera.screen_to_world(Vec2::from(mouse_position()));
         if let Some(mut animation_mapping) = resources.get_mut::<UIAnimationMap>() {
             if let Some(cursor_animation) = animation_mapping.animations.get("cursor_idle") {
                 let frame: LiegeSprite = cursor_animation.frames[0].clone();
@@ -225,7 +225,7 @@ async fn main() {
                     ..Default::default()
                 };
 
-                draw_texture_ex(texture_map.get("resources/ui/cursor/cursor.png").unwrap(), mouse_x, mouse_y, WHITE, draw_params);
+                draw_texture_ex(texture_map.get("resources/ui/cursor/cursor.png").unwrap(), cur_mouse_position.x, cur_mouse_position.y, WHITE, draw_params);
             }
 
         }
@@ -323,6 +323,23 @@ async fn main() {
             show_debug = !show_debug;
         }
 
+        // Run any UI animtations
+        let nanos = (get_frame_time() * 1_000_000_000.0) as u64;
+        for mut animation in current_ui_animations.iter_mut() {
+            let frame: LiegeSprite = animation.frames[animation.state.frame_index()].clone();
+            let source_rect = Rect::new(frame.frame.x as f32, frame.frame.y as f32, frame.frame.w as f32, frame.frame.h as f32);
+            let draw_params = DrawTextureParams{
+                source: Some(source_rect),
+                dest_size: Option::from((SPRITE_SCALE * vec2(frame.source_size.w as f32, frame.source_size.h as f32))),
+                ..Default::default()
+            };
+            draw_texture_ex(texture_map.get(animation.texture_handle).unwrap(), animation.position.x, animation.position.y, WHITE, draw_params);
+
+            animation.state.update(&animation.animation, Duration::from_nanos(nanos));
+        }
+        // Clear out any UI animations that have finished running
+        current_ui_animations.retain(|x| !x.state.is_ended());
+
         set_default_camera();
 
         if show_debug {
@@ -350,23 +367,6 @@ async fn main() {
                 animated.animation_state.update(&animated.liege_animation.animation, Duration::from_nanos(nanos));
             }
         }
-
-        // Run any UI animtations
-        for mut animation in current_ui_animations.iter_mut() {
-            let frame: LiegeSprite = animation.frames[animation.state.frame_index()].clone();
-            let source_rect = Rect::new(frame.frame.x as f32, frame.frame.y as f32, frame.frame.w as f32, frame.frame.h as f32);
-            let draw_params = DrawTextureParams{
-                source: Some(source_rect),
-                dest_size: Option::from((SPRITE_SCALE * vec2(frame.source_size.w as f32, frame.source_size.h as f32))),
-                ..Default::default()
-            };
-
-            draw_texture_ex(texture_map.get(animation.texture_handle).unwrap(), animation.position.x, animation.position.y, WHITE, draw_params);
-
-            animation.state.update(&animation.animation, Duration::from_nanos(nanos));
-        }
-        // Clear out any UI animations that have finished running
-        current_ui_animations.retain(|x| !x.state.is_ended());
 
         next_frame().await;
     }
